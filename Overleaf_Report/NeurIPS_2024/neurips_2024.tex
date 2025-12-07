@@ -1,0 +1,208 @@
+\documentclass{article}
+\usepackage[final]{neurips_2024}
+
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{url}
+
+\title{
+Application of Natural Language Processing Against Enterprise System Chat Logs
+}
+
+\author{
+  Melissa Gandy \\
+  Department of Computer Science and Engineering \\
+  University of Louisville \\
+  \texttt{msgand01@louisville.edu} \\
+  \and
+  Jessica Fowlkes \\
+  Department of Computer Science and Engineering \\
+  University of Louisville \\
+  \texttt{jmfowl05@louisville.edu}
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Enterprise collaboration platforms such as Microsoft Teams generate a continual stream of short, informal messages that reflect engineering coordination, workflow health, and behavioral patterns.  In many enterprise environments, commercial AI systems cannot be used for internal data processing, creating the need for a fully local and interpretable Natural Language Processing pipeline.  This project uses rule-based heuristics, silver-label generation, TF--IDF supervised classifiers, and a seventy-two-hour backward sequence window to detect delivery behaviors, rework signals, resubmissions, missed requirements, apology rush patterns, and sentiment polarity within chat logs.  All processing, modeling, and evaluation run inside the course Docker/Jupyter environment for reproducibility.  Preliminary results show strong model performance for after-hours delivery detection, behavioral clustering, and composite sequence-based indicators.  
+\end{abstract}
+
+
+% ----------------------------------------------------------
+\section{Key Information to include}
+
+\begin{itemize}
+\item Mentor:  
+\item External Collaborators: None  
+\item Sharing project: Melissa Gandy, Jessica Fowlkes  
+\end{itemize}
+
+
+% ----------------------------------------------------------
+\section{Introduction}
+
+Enterprise engineering teams frequently communicate in short chat messages that contain implicit workflow behaviors, such as work delivery, rework cycles, resubmissions, and sentiment changes.  Although these signals are meaningful for operational analysis, they are difficult to extract without automated tools.  Additionally, many organizations restrict the use of external AI systems, requiring approaches that operate entirely on internal infrastructure.  
+
+This project implements a fully local NLP system using techniques from Sessions 2-26 of the course, including text normalization, TF-IDF vectorization, Logistic Regression, Naive Bayes, rule-based features, sequence-aware modeling, trend analysis, and semi-supervised sentiment labeling.  The objective is to identify patterns in enterprise chat logs while maintaining interoperability and operational realism.
+
+
+% ----------------------------------------------------------
+\section{Related Work}
+
+This section will be expanded in the final version of the report.  The completed draft will summarize prior approaches to enterprise communication analysis, rule-based NLP systems, supervised text classification pipelines, and sequence-based behavior modeling.  Additional citations and comparisons to established methods will be added here.
+
+
+% ----------------------------------------------------------
+\section{Approach}
+
+The overall pipeline consists of five major components: preprocessing, silver-label generation, supervised learning, sequence logic, and temporal trend analysis.  All components execute within a controlled Docker/Jupyter environment to ensure reproducibility.  
+
+\subsection{Preprocessing (Sessions 2--3)}
+
+Two distinct normalization layers are applied.  
+
+\textbf{Rules-level normalization} includes lowercasing, removal of URLs and email patterns, punctuation removal, and whitespace reduction.  
+
+\textbf{Model-level normalization} includes tokenization, filtering to alphanumeric tokens, Porter stemming, and reconstruction into normalized feature text.  
+
+Timestamp parsing converts entries to Eastern Time and produces engineered columns: \_ts, \_dow, \_hour, \_is\_after\_5, \_is\_fri\_after\_3, \_is\_weekend, and \_is\_after\_hours.
+
+
+\subsection{Silver-Label Generation (Sessions 2, 5--6)}
+
+Keyword families define ten behavioral labels.  These include delivery events, ready-for-review indicators, status updates, apology or urgency signals, rework patterns, resubmissions, and missed requirements.  
+
+The full set of silver labels is:
+
+\begin{enumerate}[label=\arabic*.]
+\item DeliveryAfterHours  
+\item StatusChangeAfterHours  
+\item ReadyForReviewAfterHours  
+\item FridayEarlyCutoffDelivery  
+\item WeekendDelivery  
+\item ApologyRush  
+\item ReworkPhrase  
+\item ResubmissionPhrase  
+\item MissedRequirementPhrase  
+\item NotRightFirstTime  
+\end{enumerate}
+
+\subsection{Sequence Logic: NotRightFirstTime (Session 7)}
+
+Messages are sorted chronologically within communication threads.  A seventy-two-hour backward window is used to identify prior delivery-like events.  A message is labeled NotRightFirstTime if:
+
+\begin{enumerate}[label=\arabic*.]
+\item It expresses a delivery-related or status-changing event, and  
+\item At least one such event occurred earlier in the same thread within the previous seventy-two hours.  
+\end{enumerate}
+
+This sequence model captures rework loops and resubmission patterns more reliably than rule-based heuristics.
+
+
+\subsection{Supervised Classifiers (Sessions 4--6)}
+
+TF-IDF vectorization uses bigrams and a minimum document frequency of five.  For each behavior label with at least one positive sample:
+
+\begin{enumerate}[label=\arabic*.]
+\item Logistic Regression is trained and evaluated.  
+\item Multinomial Naive Bayes is trained as a baseline.  
+\item Classification metrics include precision, recall, and F1.  
+\end{enumerate}
+
+Only Logistic Regression models are exported for deployment.
+
+
+\subsection{Sentiment Modeling}
+
+Sentiment labels are derived from keyword patterns:
+
+\begin{itemize}
+\item Positive: thanks, great, appreciate, good, nice  
+\item Negative: bad, frustrated, angry, upset, broken  
+\end{itemize}
+
+Labels are in \{1, 0, -1\}.  
+A Logistic Regression model generalizes these rule-derived seeds to capture broader sentiment variation across the dataset.
+
+
+% ----------------------------------------------------------
+\section{Experiments}
+
+\subsection{Data}
+
+The dataset consists of approximately 100,000 Microsoft Teams messages.  Each message contains text, a timestamp, sender information, and optionally a thread reference.  Messages are short, informal, and irregularly structured.  
+
+Two derived text columns are created: \texttt{rules\_text} and \texttt{model\_text}.  Timestamp enrichment yields daily and hourly activity indicators that contribute to behavior detection.
+
+
+\subsection{Evaluation method}
+
+Evaluation uses precision, recall, F1, confusion matrices, and hourly trend visualizations.  Sentiment models use the same train/test split as behavioral classification.  Sequence logic is evaluated qualitatively by logically binding the correct detection of repeated delivery-related behaviors within threads.
+
+
+\subsection{Experimental details}
+
+Experiments will run inside the course Docker container.  TF-IDF features use an n-gram range of (1,2).  The train/test split is 80/20 with stratification.  Logistic Regression uses a maximum of 300 iterations.  
+
+
+\subsection{Results}
+
+Models demonstrated strong performance for DeliveryAfterHours, ApologyRush, ResubmissionPhrase, MissedRequirementPhrase, and NotRightFirstTime.  Logistic Regression consistently outperformed Naive Bayes across behaviors and sentiment.  
+
+Trend analysis revealed:
+
+\begin{itemize}
+\item Friday afternoon surges in delivery messages.  
+\item Weekend increases in apology and rework expressions.  
+\item Temporal clustering of repeated delivery patterns across threads.  
+\end{itemize}
+
+
+% ----------------------------------------------------------
+\section{Exported Artifacts and Analysis of}
+The following deliverables are produced:
+
+\begin{enumerate}[label=\arabic*.]
+\item processed\_behaviors.csv  
+\item sample\_behaviors\_1k.csv  
+\item model\_lr\_*.joblib files  
+\item vec\_*.joblib files  
+\end{enumerate}
+
+
+% ----------------------------------------------------------
+\section{Conclusion}
+
+The implemented pipeline demonstrates that interpretable,
+rule-augmented Natural Language Processing techniques can extract
+meaningful behavioral and sentiment insights from enterprise chat logs
+without external AI systems.  
+The combination of silver labels, sequence logic, and supervised
+classifiers provides a reliable basis for operational analytics and
+future extensions such as neural embeddings or transformer-based local
+models.
+
+% ----------------------------------------------------------
+\section{References}
+\begin{enumerate}
+  \item Turney, P.  Semantic Orientation Applied to Unsupervised Classification of Reviews.  ACL, 2002.  
+  \item Manning, C. and Schütze, H.  \textit{Foundations of Statistical Natural Language Processing}.  MIT Press, 1999.  
+  \item Microsoft Graph API Documentation.  
+  \item CSE–590 Course Sessions 2–26.  
+\end{enumerate}
+
+\section*{Appendix}
+
+This appendix provides additional material that supports the main findings of the report.  While the core analysis and results are presented within the primary sections of the paper, the supplementary content included here offers further detail on implementation choices, intermediate outputs, and experimental workflow.  
+
+To promote full transparency and reproducibility, the complete Jupyter notebook used in this project is included as a supplemental artifact.  The notebook contains the end-to-end pipeline used to generate all preprocessing, silver-label construction, sequence-based features, supervised model training, sentiment analysis, and trend evaluations reported in the main text.  Code cells are annotated to reflect the session sources from the course material and to clarify the role of each component in the project workflow.
+
+Readers may consult the notebook to review exact model configurations, intermediate diagnostics, and any additional plots or exploratory steps that were not included in the main paper due to space constraints.  These materials are intended to give a comprehensive view of the methodology and to facilitate future replication or extension of the work.
+
+
+\end{document}
