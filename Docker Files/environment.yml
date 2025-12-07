@@ -1,0 +1,37 @@
+name: nlp590
+channels:
+  - defaults
+  - conda-forge
+  - pytorch
+dependencies:
+  - python=3.11.6
+  - jupyterlab
+  - ipykernel
+  - numpy
+  - pandas
+  - scikit-learn
+  - matplotlib
+  - seaborn
+  - nltk
+  - spacy
+  - pytorch
+  - torchvision
+  - torchaudio
+  #- cudatoolkit=11.3  # Only if you have a compatible GPU
+  - pip
+  - pip:
+      - transformers
+      - datasets
+      - sentence-transformers
+      - huggingface_hub
+      - trl
+      - bitsandbytes
+      - sentencepiece
+      - openai
+      - tvm
+      - peft
+      - onnx
+  - pip:
+      - nltk
+  - post-build:
+      - python -m nltk.downloader popular
